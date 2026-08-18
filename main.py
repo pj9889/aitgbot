@@ -1,10 +1,11 @@
 import asyncio
+import os
 from openai import OpenAI
 from telethon import TelegramClient, events
 
-# API Credentials
-API_ID = 1234567  # আপনার my.telegram.org এর API ID বসান
-API_HASH = "YOUR_TELEGRAM_API_HASH"  # আপনার Telegram API Hash বসান
+# ----------------- CONFIGURATION -----------------
+API_ID = 33706587
+API_HASH = "784c7fe508f92afb123a06ecc13eadea"
 OPENROUTER_API_KEY = (
     "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"
 )
@@ -12,8 +13,9 @@ AFFILIATE_LINK = "https://myprofile.ninafun.online"
 
 # Photo List
 PHOTOS = ["x1.jpg", "x2.jpg", "x3.jpg", "x4.jpg", "x5.jpg"]
+# -------------------------------------------------
 
-# OpenRouter Setup
+# OpenRouter AI Setup
 ai_client = OpenAI(
     base_url="https://openrouter.ai/api/v1",
     api_key=OPENROUTER_API_KEY,
@@ -35,7 +37,6 @@ SYSTEM_PROMPT = f"""
 """
 
 
-# এআই দিয়ে মেসেজ তৈরি করার ফাংশন
 def get_ai_reply(user_message):
     try:
         response = ai_client.chat.completions.create(
@@ -51,10 +52,8 @@ def get_ai_reply(user_message):
         return None
 
 
-# ২৪ ঘণ্টার ফলো-আপ হ্যান্ডলার
 async def run_followup_schedule(chat_id):
-    # ফলো-আপ শিডিউল (ঘণ্টা অনুযায়ী সময় এবং ছবি-লিংক পাঠানোর নিয়ম)
-    # ১ ঘণ্টা (৩৬০০ সেঃ), ২ ঘণ্টা (৭২০০ সেঃ), ৩ ঘণ্টা (১০৮০০ সেঃ), ৬ ঘণ্টা, ১২ ঘণ্টা, ২৪ ঘণ্টা
+    # (অপেক্ষার সময় সেকেন্ডে, AI Prompt, লিংক যাবে কিনা, ছবির নাম)
     schedule = [
         (
             3600,
@@ -105,7 +104,7 @@ async def run_followup_schedule(chat_id):
             if send_link and AFFILIATE_LINK not in reply_text:
                 reply_text += f"\n\n👉 Join me here: {AFFILIATE_LINK}"
 
-            if photo_name:
+            if photo_name and os.path.exists(photo_name):
                 try:
                     await tg_client.send_file(
                         chat_id, photo_name, caption=reply_text
@@ -122,7 +121,7 @@ async def handle_incoming_messages(event):
     if event.is_private:
         chat_id = event.chat_id
 
-        # ভিজিটর নতুন মেসেজ দিলে পুরোনো ব্যাকগ্রাউন্ড টাইম-টাস্ক ক্যানসেল হয়ে রিস্টার্ট হবে
+        # নতুন মেসেজ আসলেই পুরোনো ফলো-আপ লুপ ক্যানসেল হবে
         if chat_id in user_tasks:
             user_tasks[chat_id].cancel()
 
@@ -130,10 +129,10 @@ async def handle_incoming_messages(event):
         ai_reply = get_ai_reply(incoming_text)
 
         if ai_reply:
-            await asyncio.sleep(3)  # ৩ সেকেন্ড ন্যাচারাল টাইপিং ডিলে
+            await asyncio.sleep(3)  # ৩ সেকেন্ড টাইপিং ডিলে
             await event.reply(ai_reply)
 
-            # চ্যাটের নতুন ফলো-আপ লুপ শুরু করা
+            # নতুন ফলো-আপ শিডিউল তৈরি
             user_tasks[chat_id] = asyncio.create_task(
                 run_followup_schedule(chat_id)
             )
