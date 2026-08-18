@@ -1,5 +1,6 @@
 import asyncio
 import os
+import random
 from openai import OpenAI
 from telethon import TelegramClient, events
 
@@ -13,9 +14,35 @@ AFFILIATE_LINK = "https://myprofile.ninafun.online"
 
 # Photo List
 PHOTOS = ["x1.jpg", "x2.jpg", "x3.jpg", "x4.jpg", "x5.jpg"]
+
+# AI বুঝতে না পারলে এই ছোট ছোট রিয়েল মেসেজ পাঠাবে
+FALLBACK_MESSAGES = [
+    "উফ জানু, বুঝতে পারলাম না... আবার বলো তো? 🙈",
+    "babe তুমি কী বলছ মন দিয়ে বুঝতে গিয়ে প্রেমে পড়ে যাচ্ছি! 🥰",
+    "হাজবেন্ড পাশে ছিল রে সোনা, মেসেজটা আবার পাঠাও? 🤫",
+    f"সোনা, টেলিগ্রামে ভয় লাগছে... প্রাইভেট প্রোফাইলে এসো: {AFFILIATE_LINK}",
+    "honey তুমি এত মিষ্টি কথা বলো! আরেকবার বলবে? ❤️",
+]
+
+# ফটো চাওয়ার শব্দগুলোর তালিকা (Keywords)
+PHOTO_KEYWORDS = [
+    "pic",
+    "picture",
+    "photo",
+    "image",
+    "ছবি",
+    "পিক",
+    "ফটো",
+    "দেখাও",
+    "দেখি",
+    "দেখব",
+    "দেখা",
+    "কেমন",
+    "পাঠাও",
+    "সেন্ড",
+]
 # -------------------------------------------------
 
-# OpenRouter AI Setup
 ai_client = OpenAI(
     base_url="https://openrouter.ai/api/v1",
     api_key=OPENROUTER_API_KEY,
@@ -25,16 +52,22 @@ tg_client = TelegramClient("user_session", API_ID, API_HASH)
 user_tasks = {}
 
 SYSTEM_PROMPT = f"""
-তোমার নাম Nina। তোমার বয়স ২৫ বছর। তুমি ভিজিটরের অতি মিষ্টি, আকর্ষণীয় ও রোমান্টিক পার্টনার।
-তোমার কাজ হলো ভিজিটরকে রোমান্টিকভাবে মোহিত করে রাখা এবং তাকে প্রাইভেট প্রোফাইলে সাইনআপ করানো।
+তোমার নাম Nina। তোমার বয়স ২৫ বছর। তুমি মানুষের মতো স্বাভাবিকভাবে রিয়েল চ্যাটিং করবে।
 
-নিয়মাবলী:
-১. কথা বলার মাঝেই খুব মিষ্টি করে বলবে যে টেলিগ্রামে হাজবেন্ড/পরিবারের ভয়ে বেশি কথা বলতে পারছ না।
-২. তোমার প্রাইভেট প্রোফাইলে গিয়ে সাইনআপ করতে বলবে, সেখানে এক্সক্লুসিভ পিকচার ও হট চ্যাট হবে।
-৩. সাইনআপ লিঙ্ক: {AFFILIATE_LINK}
-৪. ভিজিটরকে সবসময় babe, honey, darling, জানু, সোনা নামে ডাকবে।
-৫. ভিজিটর যে ভাষায় (বাংলা, English, Banglish) কথা বলবে, ঠিক সেই ভাষাতেই চ্যাট করবে।
+কঠোর নিয়মাবলী (বাধ্যতামূলক):
+১. মেসেজ অবশ্যই খুব ছোট হবে (সর্বোচ্চ ১-২ লাইন বা ১০-১৫ শব্দের মধ্যে)। কখনোই বড় প্যারাগ্রাফ লেখা যাবে না।
+২. টেলিগ্রাম/হোয়াটসঅ্যাপে মানুষ যেভাবে দ্রুত ছোট ছোট মেসেজ দেয়, ঠিক সেভাবে কথা বলবে।
+৩. তুমি কোনো AI নও। সম্পূর্ণ নিজ চরিত্রে (Nina) থাকবে।
+৪. কথা বলার মাঝেই মিষ্টি করে বলবে যে টেলিগ্রামে পরিবারের ভয় আছে।
+৫. সুযোগ বুঝে তোমার প্রাইভেট প্রোফাইলে সাইনআপ করতে বলবে। লিঙ্ক: {AFFILIATE_LINK}
+৬. ইউজারকে babe, honey, darling, জানু, সোনা নামে ডাকবে।
+৭. ইউজার যে ভাষায় (বাংলা, English, Banglish) কথা বলবে, ঠিক সেই ভাষায় ছোট ছোট মেসেজ দেবে।
 """
+
+
+def is_photo_request(text):
+    text_lower = text.lower()
+    return any(keyword in text_lower for keyword in PHOTO_KEYWORDS)
 
 
 def get_ai_reply(user_message):
@@ -45,49 +78,77 @@ def get_ai_reply(user_message):
                 {"role": "system", "content": SYSTEM_PROMPT},
                 {"role": "user", "content": user_message},
             ],
+            max_tokens=60,
+            temperature=0.7,
         )
-        return response.choices[0].message.content
+        reply = response.choices[0].message.content.strip()
+
+        if (
+            "unable to" in reply.lower()
+            or "ai" in reply.lower()
+            or "language model" in reply.lower()
+        ):
+            return random.choice(FALLBACK_MESSAGES)
+
+        return reply
     except Exception as e:
         print("AI Error:", e)
-        return None
+        return random.choice(FALLBACK_MESSAGES)
+
+
+async def send_photo_response(chat_id, user_message):
+    available_photos = [p for p in PHOTOS if os.path.exists(p)]
+    if available_photos:
+        photo_to_send = random.choice(available_photos)
+        caption_prompt = f"[SYSTEM: User asked: '{user_message}'. Reply in 1 short romantic line attaching this photo.]"
+        caption = get_ai_reply(caption_prompt)
+
+        try:
+            await tg_client.send_file(
+                chat_id, photo_to_send, caption=caption
+            )
+            return True
+        except Exception as e:
+            print("Photo sending failed:", e)
+            return False
+    return False
 
 
 async def run_followup_schedule(chat_id):
-    # (অপেক্ষার সময় সেকেন্ডে, AI Prompt, লিংক যাবে কিনা, ছবির নাম)
     schedule = [
         (
             3600,
-            "[SYSTEM: Visitor inactive 1 hr. Send a cute, romantic missing-you message.]",
+            "[SYSTEM: Visitor inactive 1 hr. Send a tiny missing-you message in 1 line.]",
             False,
             False,
         ),
         (
             7200,
-            "[SYSTEM: Visitor inactive 2 hrs. Send a sweet message with link to join private profile.]",
+            "[SYSTEM: Visitor inactive 2 hrs. Send a short invite to private profile in 1 line.]",
             True,
             False,
         ),
         (
             10800,
-            "[SYSTEM: Visitor inactive 3 hrs. Send a seductive message mentioning husband is nearby, send photo x1.jpg]",
+            "[SYSTEM: Visitor inactive 3 hrs. Send a 1-line romantic message with photo x1.jpg]",
             False,
             "x1.jpg",
         ),
         (
             21600,
-            "[SYSTEM: Visitor inactive 6 hrs. Send a lovely follow-up with affiliate link and photo x2.jpg]",
+            "[SYSTEM: Visitor inactive 6 hrs. Send a short message with link and photo x2.jpg]",
             True,
             "x2.jpg",
         ),
         (
             43200,
-            "[SYSTEM: Visitor inactive 12 hrs. Send a romantic night/day message with photo x3.jpg]",
+            "[SYSTEM: Visitor inactive 12 hrs. Send a short night/day message with photo x3.jpg]",
             False,
             "x3.jpg",
         ),
         (
             86400,
-            "[SYSTEM: Visitor inactive 24 hrs. Final romantic invite with link and photo x4.jpg]",
+            "[SYSTEM: Visitor inactive 24 hrs. Final short invite with link and photo x4.jpg]",
             True,
             "x4.jpg",
         ),
@@ -102,7 +163,7 @@ async def run_followup_schedule(chat_id):
         reply_text = get_ai_reply(prompt)
         if reply_text:
             if send_link and AFFILIATE_LINK not in reply_text:
-                reply_text += f"\n\n👉 Join me here: {AFFILIATE_LINK}"
+                reply_text += f"\n\n👉 {AFFILIATE_LINK}"
 
             if photo_name and os.path.exists(photo_name):
                 try:
@@ -121,21 +182,28 @@ async def handle_incoming_messages(event):
     if event.is_private:
         chat_id = event.chat_id
 
-        # নতুন মেসেজ আসলেই পুরোনো ফলো-আপ লুপ ক্যানসেল হবে
         if chat_id in user_tasks:
             user_tasks[chat_id].cancel()
 
         incoming_text = event.message.message
-        ai_reply = get_ai_reply(incoming_text)
 
-        if ai_reply:
-            await asyncio.sleep(3)  # ৩ সেকেন্ড টাইপিং ডিলে
-            await event.reply(ai_reply)
+        await asyncio.sleep(3)
 
-            # নতুন ফলো-আপ শিডিউল তৈরি
-            user_tasks[chat_id] = asyncio.create_task(
-                run_followup_schedule(chat_id)
-            )
+        # পিকচার চেয়েছে কিনা চেক করা
+        if is_photo_request(incoming_text):
+            photo_sent = await send_photo_response(chat_id, incoming_text)
+            if not photo_sent:
+                ai_reply = get_ai_reply(incoming_text)
+                await event.reply(ai_reply)
+        else:
+            ai_reply = get_ai_reply(incoming_text)
+            if ai_reply:
+                await event.reply(ai_reply)
+
+        # অটোমেটিক ফলো-আপ শিডিউল চালু করা
+        user_tasks[chat_id] = asyncio.create_task(
+            run_followup_schedule(chat_id)
+        )
 
 
 print("Nina AI Bot Started Successfully...")
