@@ -39,8 +39,11 @@ ai_client = OpenAI(
     api_key=OPENROUTER_API_KEY,
 )
 
-# Railway-তে ইনপুট এরর এড়ানোর জন্য প্যারামিটার আপডেট করা হয়েছে
-tg_client = TelegramClient("user_session", API_ID, API_HASH)
+# রেলওয়ে ক্রাশ এড়ানোর জন্য বট টোকেন বা সেশন হ্যান্ডেলিং ঠিক করা হয়েছে
+# এখানে আপনার টেলিগ্রাম বট টোকেনটি বসিয়ে দিন (BotFather থেকে পাওয়া টোকেন)
+BOT_TOKEN = "আপনার_বট_টোকেন_এখানে_বসিয়ে_দিন"
+
+tg_client = TelegramClient("bot", API_ID, API_HASH).start(bot_token=BOT_TOKEN)
 user_tasks = {}
 
 # 🧠 Nina's Complete Character & Persona Training Prompt (Strictly English)
