@@ -192,5 +192,6 @@ async def handle_incoming_messages(event):
 
 
 print("🔥 Nina English AI Bot Started Successfully... 🔥")
-tg_client.start()
-tg_client.run_until_disconnected()
+
+with tg_client:
+    tg_client.run_until_disconnected()
