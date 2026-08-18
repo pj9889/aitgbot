@@ -9,9 +9,6 @@ API_ID = 33706587
 API_HASH = "784c7fe508f92afb123a06ecc13eadea"
 OPENROUTER_API_KEY = "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"
 
-# আপনার টেলিগ্রাম বট টোকেনটি এখানে সরাসরি বসিয়ে দিন
-BOT_TOKEN = "আপনার_বট_টোকেন_এখানে_বসিয়ে_দিন"
-
 NEW_LINK_1 = "https://profile.ninafun.online"
 NEW_LINK_2 = "https://profile.ninafun.online"
 
@@ -42,8 +39,8 @@ ai_client = OpenAI(
     api_key=OPENROUTER_API_KEY,
 )
 
-# সরাসরি বট টোকেন দিয়ে ক্লায়েন্ট ইনিশিয়ালাইজ করা হয়েছে (রেলওয়েতে ক্রাশ করবে না)
-tg_client = TelegramClient("bot", API_ID, API_HASH).start(bot_token=BOT_TOKEN)
+# পার্সোনাল অ্যাকাউন্ট ব্যবহারের জন্য এটি ঠিক এভাবে থাকতে হবে
+tg_client = TelegramClient("user_session", API_ID, API_HASH)
 user_tasks = {}
 
 # 🧠 Nina's Complete Character & Persona Training Prompt (Strictly English)
@@ -173,6 +170,7 @@ async def handle_incoming_messages(event):
 
         await asyncio.sleep(3)
 
+        (is_photo_request(incoming_text))
         if is_photo_request(incoming_text):
             photo_sent = await send_photo_response(chat_id, incoming_text)
             if not photo_sent:
