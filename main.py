@@ -7,9 +7,7 @@ from telethon import TelegramClient, events
 # ----------------- CONFIGURATION -----------------
 API_ID = 33706587
 API_HASH = "784c7fe508f92afb123a06ecc13eadea"
-OPENROUTER_API_KEY = (
-    "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"
-)
+OPENROUTER_API_KEY = "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"
 
 NEW_LINK_1 = "https://profile.ninafun.online"
 NEW_LINK_2 = "https://profile.ninafun.online"
@@ -41,6 +39,7 @@ ai_client = OpenAI(
     api_key=OPENROUTER_API_KEY,
 )
 
+# Railway-তে ইনপুট এরর এড়ানোর জন্য প্যারামিটার আপডেট করা হয়েছে
 tg_client = TelegramClient("user_session", API_ID, API_HASH)
 user_tasks = {}
 
@@ -62,11 +61,9 @@ STRICT CHARACTER & ROLEPLAY RULES:
 8. ALWAYS reply strictly in English, no matter what language the user speaks.
 """
 
-
 def is_photo_request(text):
     text_lower = text.lower()
     return any(keyword in text_lower for keyword in PHOTO_KEYWORDS)
-
 
 def get_ai_reply(user_message):
     try:
@@ -93,7 +90,6 @@ def get_ai_reply(user_message):
         print("AI Processing Error:", e)
         return random.choice(FALLBACK_MESSAGES)
 
-
 async def send_photo_response(chat_id, user_message):
     available_photos = [p for p in PHOTOS if os.path.exists(p)]
     if available_photos:
@@ -110,7 +106,6 @@ async def send_photo_response(chat_id, user_message):
             print("Photo Send Error:", e)
             return False
     return False
-
 
 async def run_followup_schedule(chat_id):
     schedule = [
@@ -163,7 +158,6 @@ async def run_followup_schedule(chat_id):
             else:
                 await tg_client.send_message(chat_id, reply_text)
 
-
 @tg_client.on(events.NewMessage(incoming=True))
 async def handle_incoming_messages(event):
     if event.is_private:
@@ -189,7 +183,6 @@ async def handle_incoming_messages(event):
         user_tasks[chat_id] = asyncio.create_task(
             run_followup_schedule(chat_id)
         )
-
 
 print("🔥 Nina English AI Bot Started Successfully... 🔥")
 
